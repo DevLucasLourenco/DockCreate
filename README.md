@@ -10,7 +10,7 @@ Através de `Classes` e `SubClasses`, desenvolvi toda a POO do software e aprove
 
 ### Usei diversas libs, como:
 
-- `tkinter` e seus módulos `filedialog`, `messagebox`
+- `tkinter` e seus módulos `Tk`, `filedialog`, `messagebox`
 - `pandas`
 - `os`
 - `subprocess`
