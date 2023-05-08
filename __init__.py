@@ -15,11 +15,6 @@ from tkinter import messagebox
 logging.basicConfig(level=logging.INFO, filename=Path('EventFolder/event.log') , format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-class DataFrame():
-    
-    def __init__(self):
-        pass
-
 
 class DockCreate():
     """
@@ -50,6 +45,7 @@ class DockCreate():
         self.salario = None
         self.funcao = None
         self.data_admissional = None
+        self.data_admissional_por_extenso = None
         
         self.root = None
         
@@ -62,11 +58,14 @@ class DockCreate():
         
         logging.info("{:=^50}".format("Software Inicializado"))
         
+        
         try:
-            self.planilha_df = pd.read_excel('Banco de Dados.xlsx')
-        except:
-            self.planilha_df = None
+            self.planilha_df = pd.read_excel(Path('BackupFolder\BD.xlsx'))
             
+        except:
+            self.planilha_df = pd.DataFrame(columns=['Nome', 'CPF', 'RG','CTPS-Número','CTPS-Série','Endereço','CEP','Salário','Função','Data Admissional','Data Admissional por Extenso'])
+            self.planilha_df.to_excel(Path('BackupFolder\BD.xlsx'), index=False)
+        
             
         Path('EventFolder').mkdir(exist_ok=True)
         Path('DocumentosCriados').mkdir(exist_ok=True)
@@ -74,24 +73,8 @@ class DockCreate():
         
         
         self.interface_grafica()
-        
-        
-    
-    @staticmethod
-    def _guardar_backup(dados):
 
-        try:
-            with open(Path('BackupFolder/DataBackup.txt'), 'r', encoding='utf-8') as file:
-                arquivo_preenchido = file.read()
-            
-            with open(Path('BackupFolder/DataBackup.txt'), 'w', encoding='utf-8') as file:
-                file.write(arquivo_preenchido + '\n')
-                file.write(dados)
-                
-        except Exception:
-            with open(Path('BackupFolder/DataBackup.txt'), 'w', encoding='utf-8') as file:
-                file.write(dados)
-                
+
             
     @staticmethod
     def _formatar_rg(item):
@@ -149,24 +132,49 @@ class DockCreate():
     def _campo_delete_insert(var, dado):
         var.delete(0, tk.END)
         var.insert(0, dado)
-    
-    
-    
-    def Conferir_DataFrame():
-        filename = filedialog.askopenfilename()
         
-        if os.path.exists(filename):
-            df = pd.read_excel(filename)
-            
-        else:
-            df = pd.DataFrame()
-            df.to_excel(filename, index=False)
-
+        
     
+    def _guardar_backup(self, dados):
+    
+        self.planilha_df = self.planilha_df[['Nome','CPF','RG','CTPS-Número','CTPS-Série', 'Endereço', 'CEP', 'Salário', 'Função', 'Data Admissional', 'Data Admissional por Extenso']]
+        self.planilha_df.loc[len(self.planilha_df) + 1] = dados
+        self.planilha_df.to_excel(Path('BackupFolder\BD.xlsx'), index=False)
+        
+    
+    
+    @staticmethod
+    def converter_por_extenso(item:str):
+        tratamento = {
+            1:'Janeiro',
+            2:'Fevereiro',
+            3:'Março',
+            4:'Abril',
+            5:'Maio',
+            6:'Junho',
+            7:'Julho',
+            8:'Agosto',
+            9:'Setembro',
+            10:'Outubro',
+            11:'Novembro',
+            12:'Dezembro',
+            }
+        
+        try:
+            item_tratado = item.split('/')       
+            item_tratado[1] = tratamento[int(item_tratado[1])]
+            item_tratado = ' de '.join(item_tratado)
+            
+            return item_tratado
+        
+        except Exception:
+            pass    
+        
+    
+    # abrir uma janela de menu. Outra classe.
     def abrir_menu(self):     
         
-        JanelaMenu(self.root, self.campo_nome, self.campo_cpf, self.campo_rg, self.campo_ctps_numero, self.campo_ctps_serie, 
-                        self.campo_endereco, self.campo_cep, self.campo_salario, self.campo_funcao, self.campo_data_admissional)
+        JanelaMenu(self)
 
 
     # Usado para notiicar quando os documentos forem gerados
@@ -262,7 +270,21 @@ class DockCreate():
             self.campo_funcao.delete(0, tk.END)
             self.campo_data_admissional.delete(0, tk.END)
             
-            DockCreate._guardar_backup(self.dados_funcionarios)
+            self.dados_funcionarios = {
+                                       'Nome':self.nome, 
+                                       'CPF':self.cpf, 
+                                       'RG':self.rg, 
+                                       'CTPS-Número':self.ctps_numero,
+                                       'CTPS-Série':self.ctps_serie, 
+                                       'Endereço':self.endereco, 
+                                       'CEP':self.cep, 
+                                       'Salário':self.salario, 
+                                       'Função':self.funcao, 
+                                       'Data Admissional':self.data_admissional, 
+                                       'Data Admissional por Extenso':DockCreate.converter_por_extenso(self.data_admissional)
+                                       }
+            
+            self._guardar_backup(self.dados_funcionarios)
             
             self.contador = 1            
             messagebox.showinfo('Concluído', f'Dados de {self.nome} foram salvos.')
@@ -289,7 +311,6 @@ class DockCreate():
             self.campo_salario.insert(0, dados[7])
             self.campo_funcao.insert(0, dados[8])
             self.campo_data_admissional.insert(0, dados[9])
-            
             
             self.criar_arquivo()
 
@@ -412,11 +433,12 @@ class DockCreate():
         # criar uma janela principal
         self.root = tk.Tk()
 
-
         # definir o tamanho e a posição da janela principal
         self.root.geometry("800x600+350+100")
 
-
+        # iconbitmap
+        self.root.iconbitmap('utilidades/icon.jpg')
+        
         # adicionar o cabeçalho
         header_frame = tk.Frame(self.root, bg="#1F2E46", padx=20, pady=10)
         header_frame.pack(side="top", fill="x")
@@ -432,7 +454,6 @@ class DockCreate():
         nome_empresa.pack(side="left")
 
 
-
         ###### Frames
         # adicionar o quadro para os checkboxes
         checkbox_frame = tk.Frame(self.root, padx=0, pady=0, )
@@ -444,7 +465,7 @@ class DockCreate():
 
         # adicionar as entradas de texto
         fields_frame = tk.Frame(self.root, padx=20, pady=0)
-        fields_frame.pack(side="left", fill="both", expand=True)
+        fields_frame.pack(side="left", fill="both")
 
 
 
@@ -539,7 +560,6 @@ class DockCreate():
         self.var_arquivo3 = tk.IntVar()
         
         # adicionar os checkboxes
-        
         bg_checkbox_field = '#708090'
         
         termo_conhecimento_checkbox = tk.Checkbutton(checkbox_frame, text=list(self.dados_validacao.keys())[0],variable=self.var_arquivo1,
@@ -639,86 +659,85 @@ class DockCreate():
                 # substituir a palavra-chave com seu valor correspondente
                 if key in para.text:
                     para.text = para.text.replace(key, substituicao[key])
+                    
         arquivo.save(f'DocumentosCriados/{self.campo_nome.get()} {self._nomes_documentos_utilizados[indice]}.docx') 
         logging.info(f'{self._nomes_documentos_utilizados[indice]} Criado')
         
         
-        
-################################################
-
-
 
 class JanelaMenu():
     
-    def __init__(self, objeto, nome, cpf, rg, ctps_num, ctps_serie, endereco, cep, salario, funcao, data_admissao): 
-        self.root = objeto 
+    def __init__(self, objeto):
+        self.objeto = objeto
+        # PEGAR ESTA REFERÊNCIA E FAZER DAQUI EM DIANTE
+                
+        self.root_janela_menu = None
         self.lista_dados_funcionarios = {}
-        
-        self.nome, self.cpf, self.rg, self.ctps_numero, self.ctps_serie, self.endereco, self.cep, self.salario, self.funcao, self.data_admissional = nome, cpf, rg, ctps_num, ctps_serie, endereco, cep, salario, funcao, data_admissao
         
         self.inicializar()
         
-            
-    def _procurar_dados(self):
+        self.objeto.limpar_caixa_entrada()
         
-        
-        with open('BackupFolder/DataBackup.txt', 'r', encoding='utf-8') as file:
-            dados = file.readlines()
-            
-        for i, item in enumerate(dados):
-            item = item.split(';')
-            nome, cpf, rg, ctps_num, ctps_serie, endereco, cep, salario, funcao, data_admissao = item
 
-            self.lista_dados_funcionarios.update({JanelaMenu._tratar_lista([nome, cpf, funcao, salario, data_admissao]): [nome, cpf, rg, ctps_num, ctps_serie, endereco, cep, salario, funcao, data_admissao]})
+    def _procurar_dados(self):
+                    
+        for item in self.objeto.planilha_df.index:
+            # nome, cpf, rg, ctps_num, ctps_serie, endereco, cep, salario, funcao, data_admissao = item
+            # self.lista_dados_funcionarios.update({JanelaMenu._tratar_lista([nome, cpf, funcao, salario, data_admissao]): [nome, cpf, rg, ctps_num, ctps_serie, endereco, cep, salario, funcao, data_admissao]})
+            # self.lista_dados_funcionarios.update()
+            print(self.objeto.planilha_df[item])
+            
+            
+            pass
+            
         
-        
+
 
     @staticmethod
     def _tratar_lista(lista):
         dados_tratados = ' - '.join(lista)
         
         return dados_tratados
+        
+        
+    
+    @staticmethod
+    def _deletar_campo_entrada(var):
+            var.delete(0, tk.END)
             
         
         
     def _ao_selecionar(self, event):
         selection = event.widget.curselection()
-        item = event.widget.get(selection[0])
+        self.item = event.widget.get(selection[0])
         
-        dados = self.lista_dados_funcionarios[item]
+        dados = self.lista_dados_funcionarios[self.item]
         logging.info(f'Selecionado através do Menu: {dados}')
         
-        DockCreate._campo_delete_insert(self.nome, dados[0])
-        DockCreate._campo_delete_insert(self.cpf, dados[1])
-        DockCreate._campo_delete_insert(self.rg, dados[2])
-        DockCreate._campo_delete_insert(self.ctps_numero, dados[3])
-        DockCreate._campo_delete_insert(self.ctps_serie, dados[4])
-        DockCreate._campo_delete_insert(self.endereco, dados[5])
-        DockCreate._campo_delete_insert(self.cep, dados[6])
-        DockCreate._campo_delete_insert(self.salario, dados[7])
-        DockCreate._campo_delete_insert(self.funcao, dados[8])
-        DockCreate._campo_delete_insert(self.data_admissional, dados[9])
-
         
-    def apagar_dados():
-        # DockCreate.limpar_caixa_entrada()
+    def apagar_dados(self):
+        
+        #apagar linha do BD
+        map(JanelaMenu._deletar_campo_entrada(),  'lista aqui' )
+        
+        print('aa')
         pass
         
     
     def inicializar(self):
         # criar uma nova janela
-        nova_janela = tk.Toplevel(self.root)
-        nova_janela.geometry("600x550+650+150")
-        nova_janela.title("Menu")
+        self.root_janela_menu = tk.Toplevel(self.objeto.root)
+        self.root_janela_menu.geometry("600x550+650+150")
+        self.root_janela_menu.title("Menu")
 
-        header_frame = tk.Frame(nova_janela, bg="#1F2E46", padx=20, pady=10)
+        header_frame = tk.Frame(self.root_janela_menu, bg="#1F2E46", padx=20, pady=10)
         header_frame.pack(side="top", fill="x")
         
         # rótulo na nova janela
         label = tk.Label(header_frame, text="Menu", font=("Arial", 24), bg="#1F2E46", fg="white", padx=10, pady=5)
         label.pack(pady=0)
         
-        frame_exclusao = tk.Frame(nova_janela, padx=0, pady=5)
+        frame_exclusao = tk.Frame(self.root_janela_menu, padx=0, pady=5)
         frame_exclusao.pack(side="top")
               
         
@@ -730,7 +749,7 @@ class JanelaMenu():
         delete_button.pack(side='top', padx=0, pady=0)
       
 
-        options_frame = tk.Frame(nova_janela)
+        options_frame = tk.Frame(self.root_janela_menu)
         options_frame.pack(side="left", padx=10, pady=20)
 
 
@@ -755,7 +774,7 @@ class JanelaMenu():
         for option in self.lista_dados_funcionarios.keys():
             options_listbox.insert("end", option)
 
-        nova_janela.mainloop()
+        self.root_janela_menu.mainloop()
 
 
 
@@ -776,6 +795,7 @@ class JanelaBuscaCEP():
     
     
 class PreenchimentoInfoFuncionario():
+    
     def __init__():
         pass
     
